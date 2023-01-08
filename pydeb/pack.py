@@ -19,7 +19,7 @@ class Pack:
 			raise Exception(f'Passed file {self.path} does not exist.')
 		# check if path is correct
 		if not path.isdir(self.path):
-			raise Exception(f'Passed file {self.path} is not a deb file.')
+			raise Exception(f'Passed file {self.path} is not a directory file.')
 		# check if DEBIAN exists
 		if not path.exists(f'{self.path}/DEBIAN/control'):
 			raise Exception(f'DEBIAN/control does not exist.')
