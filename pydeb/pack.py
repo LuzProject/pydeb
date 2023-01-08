@@ -11,6 +11,8 @@ class Pack:
 	def __init__(self, path: str):
 		# path to pack
 		self.path = path
+		# path of deb
+		self.debpath = ''
 		self.__pack()
 		
 	def __pack(self):
@@ -30,6 +32,7 @@ class Pack:
 			raise Exception('Command "ar" is not installed. Please install it in order to use this library.')
 		# formatted path
 		fpath = Path(self.path)
+		self.debpath = f'{fpath.name}.deb'
 		# tmp dir
 		tmp = f'.{fpath.name}.pack.tmp'
 		# loop through files
@@ -59,7 +62,7 @@ class Pack:
 		rmtree(f'{tmp}/FILESYSTEM')
 		
 		# create deb
-		system(f'{ar} r {fpath.name}.deb {tmp}/*')
+		system(f'{ar} r {self.debpath} {tmp}/*')
 		
 		# delete tmp
 		rmtree(tmp)
