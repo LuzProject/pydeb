@@ -24,7 +24,7 @@ class Deb:
 		tmp = self.__extract()
 		
 		# control
-		self.control = Control(open(f'{tmp}/control/control').read())
+		self.control = Control(open(f'{tmp}/DEBIAN/control').read())
 		
 		# filepaths
 		self.filepaths = {'root': [], 'control': []}
@@ -71,6 +71,7 @@ class Deb:
 			if not file.startswith('control.') and not file.startswith('data.'):
 				remove(f'{self.xpath}/{file}')
 			else:
+				filename = 'DEBIAN' if file.startswith('control.') else ''
 				# make sure file is a tar
 				if 'tar' not in file:
 					raise Exception(f'Unknown archive format. ({file.replace("control.", "").replace("data.", "")})')
@@ -79,7 +80,7 @@ class Deb:
 				file_obj = tarfile.open(f'{self.xpath}/{file}', 'r')
 				 
 				# extract all files
-				file_obj.extractall(f'{self.xpath}/{file.split(".")[0]}')
+				file_obj.extractall(f'{self.xpath}/{filename}')
 				 
 				# close file
 				file_obj.close()
