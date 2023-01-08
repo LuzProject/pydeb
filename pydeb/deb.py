@@ -31,23 +31,30 @@ class Deb:
 		
 		# assign filepaths
 		for file in get_filepaths(tmp):
-			# if file starts with /data, add it to 'root'
-			if file.startswith('/data'): self.filepaths['root'].append(file.replace('/data', ''))
 			# if file starts with /control, add it to 'control'
-			if file.startswith('/control'): self.filepaths['control'].append(file.replace('/control/', ''))
+			if file.startswith('/DEBIAN'):
+				self.filepaths['control'].append(file.replace('/DEBIAN/', ''))
+			else:
+				self.filepaths['root'].append(file.replace('/data', ''))
 		
 		# get contents of scripts
 		self.scripts = {}
 		
 		for f in self.filepaths.get('control'):
 			if f == '': continue
-			self.scripts[f.replace('/', '')] = open(f'{tmp}/control/{f}').read()
+			self.scripts[f.replace('/', '')] = open(f'{tmp}/DEBIAN/{f}').read()
 		
 		if remove_file: rmtree(tmp)
 
 	def __extract(self) -> str:
 		# set file var
 		file = self.file
+		# check if file exists
+		if not path.exists(file):
+			raise Exception(f'Passed file {file} does not exist.')
+		# check if file is correct
+		if not file.endswith('.deb'):
+			raise Exception(f'Passed file {file} is not a deb file.')
 		# filename
 		filename = Path(file).name
 		# set path
@@ -56,7 +63,7 @@ class Deb:
 		else:
 			self.xpath = f'./{filename.replace(".deb", "")}'
 		# get full path
-		path = f'{file if file.startswith("/") else getcwd() + "/" + file}'
+		fpath = f'{file if file.startswith("/") else getcwd() + "/" + file}'
 		# get ar command
 		ar = cmd_in_path('ar')
 		# ensure file exists
@@ -65,7 +72,7 @@ class Deb:
 		# make tmp dir
 		mkdir(self.xpath)
 		# extract deb
-		system(f'cd {self.xpath} && ar x {path}')
+		system(f'cd {self.xpath} && ar x {fpath}')
 		# remove all files except control and data
 		for file in listdir(self.xpath):
 			if not file.startswith('control.') and not file.startswith('data.'):

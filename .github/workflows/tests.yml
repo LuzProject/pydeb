@@ -39,10 +39,13 @@ jobs:
       - name: Build and install projet
         run: poetry build && pip install dist/pydeb*.whl
         
-      - name: Get repo zip
+      - name: Get test repo
         run: |
             wget ${{ env.zip-link }}
             unzip repo.zip
     
       - name: Attempt to extract deb
         run: python tests/test.py
+      
+      - name: Attempt to repack deb
+        run: python tests/test2.py
