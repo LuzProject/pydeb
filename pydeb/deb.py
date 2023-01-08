@@ -79,7 +79,7 @@ class Deb:
 				file_obj = tarfile.open(f'{self.xpath}/{file}', 'r')
 				 
 				# extract all files
-				file_obj.extractall(f'{self.xpath}/{file.split('.')[0]}')
+				file_obj.extractall(f'{self.xpath}/{file.split(".")[0]}')
 				 
 				# close file
 				file_obj.close()
