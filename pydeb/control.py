@@ -1,5 +1,8 @@
 class Control:
 	def __init__(self, control: str):
+		# raw control
+		self.raw = control
+		
 		# bundle id
 		self.package: str
 		
