@@ -39,9 +39,10 @@ class Pack:
 			raise Exception(
 				'Command "ar" is not installed. Please install it in order to use this library.')
 		# ensure algorithm is valid
-		if self.algorithm is not 'xz' and self.algorithm is not 'gzip' and self.algorithm is not 'bzip2':
+		if self.algorithm != 'xz' and self.algorithm != 'gzip' and self.algorithm != 'bzip2':
+			print(self.algorithm)
 			raise Exception(
-				f'Invalid algorithm type {self.algorithm}. Valid types are: xz, gzip, bzip2.Default is xz.')
+				f'Invalid algorithm type {self.algorithm}. Valid types are: xz, gzip, bzip2. Default is xz.')
 		# ensure compression level is valid
 		if self.level < 1 or self.level > 9:
 			raise Exception(
