@@ -42,6 +42,7 @@ class Control:
 		# assign
 		self.__assign(control)
 	
+
 	def __assign(self, control: str):
 		last = ''
 		# split control by line
