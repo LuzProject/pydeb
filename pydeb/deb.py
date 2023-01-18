@@ -69,6 +69,9 @@ class Deb:
 		# ensure file exists
 		if ar == None:
 			raise Exception('Command "ar" is not installed. Please install it in order to use this library.')
+        # if tmp dir exists, remove it
+		if path.exists(self.xpath):
+			rmtree(self.xpath)
 		# make tmp dir
 		mkdir(self.xpath)
 		# extract deb

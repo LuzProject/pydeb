@@ -51,6 +51,9 @@ class Pack:
 		self.debpath = f'{fpath.name}.deb'
 		# tmp dir
 		tmp = f'.{fpath.name}.pack.tmp'
+		# remove tmp dir if it exists
+		if path.exists(tmp):
+			rmtree(tmp)
 		# loop through files
 		for f in listdir(self.path):
 			if f == 'DEBIAN':
