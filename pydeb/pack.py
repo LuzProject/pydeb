@@ -5,6 +5,7 @@ from pathlib import Path
 from shutil import copytree, rmtree
 
 # local imports
+from .control import Control
 from .utils import cmd_in_path
 
 
@@ -49,7 +50,9 @@ class Pack:
 				f'Invalid compression level {self.level}. Valid levels are 1-9. Default is 9.')
 		# formatted path
 		fpath = Path(self.path)
-		self.debpath = f'{fpath.name}.deb'
+		with open(f'{self.path}/DEBIAN/control', 'r') as f:
+			control = Control(f.read())
+			self.debpath = f'{control.package}_{control.version}_{control.architecture}.deb'
 		# tmp dir
 		tmp = f'.{fpath.name}.pack.tmp'
 		# remove tmp dir if it exists
