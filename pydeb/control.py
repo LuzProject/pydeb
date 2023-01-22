@@ -59,28 +59,28 @@ class Control:
 				value = line.split(': ')[1]
 				last = key
 			# match statement
-			match key:
-				case 'Package':
-					self.package = value
-				case 'Name':
-					self.name = value
-				case 'Version':
-					self.version = value
-				case 'Author':
-					self.author = value
-				case 'Maintainer':
-					self.maintainer = value
-				case 'Description':
-					self.description = value
-				case 'Architecture':
-					self.architecture = value
-				case 'Depends':
-					self.depends = value
-				case 'Section':
-					self.section = value
-				case 'Icon':
-					self.icon = value
-				case 'Depiction':
-					self.depiction = value
-				case 'SileoDepiction':
-					self.sileodepiction = value
+			if key == 'Package':
+				self.package = value
+			elif key == 'Name':
+				self.name = value
+			elif key == 'Version':
+				self.version = value
+			elif key == 'Author':
+				self.author = value
+			elif key == 'Maintainer':
+				self.maintainer = value
+			elif key == 'Description':
+				self.description = value
+			elif key == 'Architecture':
+				self.architecture = value
+			elif key == 'Depends':
+				self.depends = value
+			elif key == 'Section':
+				self.section = value
+			elif key == 'Icon':
+				self.icon = value
+			elif key == 'Depiction':
+				self.depiction = value
+			elif key == 'SileoDepiction':
+				self.sileodepiction = value
+    
