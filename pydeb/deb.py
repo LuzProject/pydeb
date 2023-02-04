@@ -1,8 +1,8 @@
 # module imports
-from os import getcwd, listdir, mkdir, path, remove, system
+from os import getcwd, listdir, makedirs, path, remove
 from pathlib import Path
 from shutil import rmtree
-import xtarfile as tarfile
+from subprocess import getoutput
 
 # local imports
 from .control import Control
@@ -19,6 +19,20 @@ class Deb:
 		
 		# file path
 		self.file = file
+
+		# get ar command
+		self.ar = cmd_in_path('ar')
+		# ensure file exists
+		if self.ar == None:
+			raise Exception(
+				'Command "ar" could not be found. Please install it in order to use this library.')
+
+		# get tar command
+		self.tar = cmd_in_path('tar')
+		# ensure file exists
+		if self.tar == None:
+			raise Exception(
+				'Command "tar" could not be found. Please install it in order to use this library.')
 		
 		# extract
 		tmp = self.__extract()
@@ -64,18 +78,13 @@ class Deb:
 			self.xpath = f'./{filename.replace(".deb", "")}'
 		# get full path
 		fpath = f'{file if file.startswith("/") else getcwd() + "/" + file}'
-		# get ar command
-		ar = cmd_in_path('ar')
-		# ensure file exists
-		if ar == None:
-			raise Exception('Command "ar" is not installed. Please install it in order to use this library.')
         # if tmp dir exists, remove it
 		if path.exists(self.xpath):
 			rmtree(self.xpath)
 		# make tmp dir
-		mkdir(self.xpath)
+		makedirs(self.xpath)
 		# extract deb
-		system(f'cd {self.xpath} && ar x {fpath}')
+		getoutput(f'cd {self.xpath} && {self.ar} x {fpath}')
 		# remove all files except control and data
 		for file in listdir(self.xpath):
 			if not file.startswith('control.') and not file.startswith('data.'):
@@ -86,11 +95,13 @@ class Deb:
 				if 'tar' not in file:
 					raise Exception(f'Unknown archive format. ({file.replace("control.", "").replace("data.", "")})')
 				
-				# open file in read mode
-				with tarfile.open(f'{self.xpath}/{file}', 'r') as file_obj:
-					# extract all files
-					file_obj.extractall(f'{self.xpath}/{filename}')
-					file_obj.close()
+				try:
+					makedirs(f'{self.xpath}/{filename}', exist_ok=True)
+					after_args = f'-C DEBIAN' if file.startswith('control.') else ''
+					getoutput(f'cd {self.xpath} && {self.tar} -xf {file} {after_args}')
+				except:
+					raise Exception(
+						f"Error while decompressing archive {file}.")
 				
 				# remove tar
 				remove(f'{self.xpath}/{file}')

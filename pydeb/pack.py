@@ -4,9 +4,6 @@ from os import listdir
 from pathlib import Path
 from shutil import copytree, rmtree
 from subprocess import getoutput
-from tarfile import GNU_FORMAT
-import xtarfile as tarfile
-from zstandard import ZstdCompressionParameters
 
 # local imports
 from .control import Control
@@ -17,12 +14,59 @@ class Pack:
 	def __init__(self, path: Path, algorithm: str = 'xz', compression_level: int = 9):
 		# check if path is Path
 		if type(path) is not Path: path = Path(path)
-		# path to pack
-		self.path = path
+
 		# algo
 		self.algorithm = algorithm
+		# fix algorithms
+		if self.algorithm == 'gz':
+			self.algorithm = 'gzip'
+		elif self.algorithm == 'bz2':
+			self.algorithm = 'bzip2'
+		elif self.algorithm == 'zst':
+			self.algorithm = 'zstd'
+		elif self.algorithm == 'lz':
+			self.algorithm = 'lzma'
+
+		# file endings
+		# handle algorithm
+		if self.algorithm == 'zstd': self.ending = 'zst'
+		elif self.algorithm == 'gzip': self.ending = 'gz'
+		elif self.algorithm == 'bzip2': self.ending = 'bz2'
+		else: self.ending = self.algorithm
+
+		# valid algos
+		self.valid = ['xz', 'gzip', 'bzip2', 'zstd', 'lzma', 'lz4']
+		if self.algorithm not in self.valid:
+			raise Exception(
+				f'Invalid algorithm type {self.algorithm}. Valid types are: xz, gzip, bzip2, lzma. Default is xz.')
+
+		# get ar command
+		self.ar = cmd_in_path('ar')
+		# ensure file exists
+		if self.ar == None:
+			raise Exception(
+				'Command "ar" could not be found. Please install it in order to use this library.')
+
+		# get tar command
+		self.tar = cmd_in_path('tar')
+		# ensure file exists
+		if self.tar == None:
+			raise Exception(
+				'Command "tar" could not be found. Please install it in order to use this library.')
+
+		# get compress command
+		self.compress_command = cmd_in_path(self.algorithm)
+		# ensure file exists
+		if self.compress_command == None:
+			raise Exception(
+				f'Command "{self.algorithm}" could not be found. Please install it in order to use this library.')
+		
+		# path to pack
+		self.path = path
+
 		# level
 		self.level = compression_level
+
 		# path of deb
 		self.debpath = ''
 		self.__pack()
@@ -30,22 +74,10 @@ class Pack:
 	def __compress_object(self, algo: str, tmp, dir_name):
 		archive_name = 'data.tar'
 		if dir_name == 'DEBIAN': archive_name = 'control.tar'
-		if algo == 'xz':
-			# create archive
-			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', preset=self.level, format=GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/{dir_name}', arcname='.')
-				tar.close()
-		elif algo == 'zst':
-			params = ZstdCompressionParameters(format=GNU_FORMAT).from_level(self.level)
-			# create archive
-			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', compression_params=params) as tar:
-				tar.add(f'{tmp}/{dir_name}', arcname='.')
-				tar.close()
-		else:
-			# create archive
-			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', compresslevel=self.level, format=GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/{dir_name}', arcname='.')
-				tar.close()
+		try:
+			getoutput(f'cd {tmp}/{dir_name} && {self.tar} -cf - . | {self.compress_command} -{self.level} -c > ../{archive_name}.{self.ending}')
+		except:
+			raise Exception(f"Error while compressing directory {dir_name} with {algo} algorithm.")
 
 
 	def __pack(self):
@@ -59,20 +91,6 @@ class Pack:
 		# check if DEBIAN exists
 		if not Path(f'{self.path}/DEBIAN/control').exists():
 			raise Exception(f'DEBIAN/control does not exist.')
-		# get ar command
-		ar = cmd_in_path('ar')
-		# ensure file exists
-		if ar == None:
-			raise Exception(
-				'Command "ar" is not installed. Please install it in order to use this library.')
-		# ensure algorithm is valid
-		if self.algorithm not in ['xz', 'gzip', 'bzip2', 'zstd']:
-			raise Exception(
-				f'Invalid algorithm type {self.algorithm}. Valid types are: xz, gzip, bzip2. Default is xz.')
-		# ensure compression level is valid
-		if self.level < 1 or self.level > 9:
-			raise Exception(
-				f'Invalid compression level {self.level}. Valid levels are 1-9. Default is 9.')
 		# formatted path
 		with open(f'{self.path}/DEBIAN/control', 'r') as f:
 			control = Control(f.read())
@@ -89,14 +107,6 @@ class Pack:
 			else:
 				copytree(f'{self.path}/{f}', f'{tmp}/FILESYSTEM/{f}')
 
-		# format algo var
-		if self.algorithm == 'gzip':
-			self.algorithm = 'gz'
-		if self.algorithm == 'bzip2':
-			self.algorithm = 'bz2'
-		if self.algorithm == 'zstd':
-			self.algorithm = 'zst'
-
 		with ThreadPool() as pool:
 			pool.starmap(self.__compress_object, [(self.algorithm, tmp, 'DEBIAN'), (self.algorithm, tmp, 'FILESYSTEM')])
 
@@ -110,7 +120,7 @@ class Pack:
 		rmtree(f'{tmp}/FILESYSTEM')
 
 		# create deb
-		getoutput(f'{ar} r {self.debpath} {tmp}/debian-binary {tmp}/control.tar.* {tmp}/data.tar.*')
+		getoutput(f'{self.ar} r {self.debpath} {tmp}/debian-binary {tmp}/control.tar.{self.ending} {tmp}/data.tar.{self.ending}')
 
 		# delete tmp
 		rmtree(tmp)
