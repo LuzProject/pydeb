@@ -1,9 +1,12 @@
 # module imports
-import tarfile
-from os import listdir, path
+from multiprocessing.pool import ThreadPool
+from os import listdir
 from pathlib import Path
 from shutil import copytree, rmtree
 from subprocess import getoutput
+from tarfile import GNU_FORMAT
+import xtarfile as tarfile
+from zstandard import ZstdCompressionParameters
 
 # local imports
 from .control import Control
@@ -24,6 +27,26 @@ class Pack:
 		self.debpath = ''
 		self.__pack()
 
+	def __compress_object(self, algo: str, tmp, dir_name):
+		archive_name = 'data.tar'
+		if dir_name == 'DEBIAN': archive_name = 'control.tar'
+		if algo == 'xz':
+			# create archive
+			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', preset=self.level, format=GNU_FORMAT) as tar:
+				tar.add(f'{tmp}/{dir_name}', arcname='.')
+				tar.close()
+		elif algo == 'zst':
+			params = ZstdCompressionParameters(format=GNU_FORMAT).from_level(self.level)
+			# create archive
+			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', compression_params=params) as tar:
+				tar.add(f'{tmp}/{dir_name}', arcname='.')
+				tar.close()
+		else:
+			# create archive
+			with tarfile.open(f'{tmp}/{archive_name}.{algo}', f'w:{algo}', compresslevel=self.level, format=GNU_FORMAT) as tar:
+				tar.add(f'{tmp}/{dir_name}', arcname='.')
+				tar.close()
+
 
 	def __pack(self):
 		# check if path exists
@@ -43,7 +66,7 @@ class Pack:
 			raise Exception(
 				'Command "ar" is not installed. Please install it in order to use this library.')
 		# ensure algorithm is valid
-		if self.algorithm not in ['xz', 'gzip', 'bzip2']:
+		if self.algorithm not in ['xz', 'gzip', 'bzip2', 'zstd']:
 			raise Exception(
 				f'Invalid algorithm type {self.algorithm}. Valid types are: xz, gzip, bzip2. Default is xz.')
 		# ensure compression level is valid
@@ -71,28 +94,11 @@ class Pack:
 			self.algorithm = 'gz'
 		if self.algorithm == 'bzip2':
 			self.algorithm = 'bz2'
+		if self.algorithm == 'zstd':
+			self.algorithm = 'zst'
 
-		# this is needed due to a strange issue where xz compression has preset instead of compresslevel.
-		if self.algorithm == 'xz':
-			# create control archive
-			with tarfile.open(f'{tmp}/control.tar.{self.algorithm}', f'w:{self.algorithm}', preset=self.level, format=tarfile.GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/DEBIAN', arcname='.')
-				tar.close()
-
-			# create data archive
-			with tarfile.open(f'{tmp}/data.tar.{self.algorithm}', f'w:{self.algorithm}', preset=self.level, format=tarfile.GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/FILESYSTEM', arcname='.')
-				tar.close()
-		else:
-			# create control archive
-			with tarfile.open(f'{tmp}/control.tar.{self.algorithm}', f'w:{self.algorithm}', compresslevel=self.level, format=tarfile.GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/DEBIAN', arcname='.')
-				tar.close()
-
-			# create data archive
-			with tarfile.open(f'{tmp}/data.tar.{self.algorithm}', f'w:{self.algorithm}', compresslevel=self.level, format=tarfile.GNU_FORMAT) as tar:
-				tar.add(f'{tmp}/FILESYSTEM', arcname='.')
-				tar.close()
+		with ThreadPool() as pool:
+			pool.starmap(self.__compress_object, [(self.algorithm, tmp, 'DEBIAN'), (self.algorithm, tmp, 'FILESYSTEM')])
 
 		# create binary
 		with open(f'{tmp}/debian-binary', 'w') as f:

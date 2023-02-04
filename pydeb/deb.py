@@ -1,8 +1,8 @@
 # module imports
-import tarfile
 from os import getcwd, listdir, mkdir, path, remove, system
 from pathlib import Path
 from shutil import rmtree
+import xtarfile as tarfile
 
 # local imports
 from .control import Control
@@ -87,13 +87,10 @@ class Deb:
 					raise Exception(f'Unknown archive format. ({file.replace("control.", "").replace("data.", "")})')
 				
 				# open file in read mode
-				file_obj = tarfile.open(f'{self.xpath}/{file}', 'r')
-				 
-				# extract all files
-				file_obj.extractall(f'{self.xpath}/{filename}')
-				 
-				# close file
-				file_obj.close()
+				with tarfile.open(f'{self.xpath}/{file}', 'r') as file_obj:
+					# extract all files
+					file_obj.extractall(f'{self.xpath}/{filename}')
+					file_obj.close()
 				
 				# remove tar
 				remove(f'{self.xpath}/{file}')
