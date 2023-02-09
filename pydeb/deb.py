@@ -2,15 +2,18 @@
 from os import getcwd, listdir, makedirs, path, remove
 from pathlib import Path
 from shutil import rmtree
-from subprocess import getoutput
 
 # local imports
 from .control import Control
-from .utils import cmd_in_path, get_filepaths
+from .utils import get_filepaths, resolve_path
+from .archives.tar import TAR
 
 
 class Deb:
-	def __init__(self, file: str, remove_file: bool = True):
+	def __init__(self, file: str, outdir: str = './', remove_file: bool = True):
+		# outdir
+		self.outdir = outdir
+
 		# xpath
 		self.xpath = ''
 		
@@ -20,19 +23,8 @@ class Deb:
 		# file path
 		self.file = file
 
-		# get ar command
-		self.ar = cmd_in_path('ar')
-		# ensure file exists
-		if self.ar == None:
-			raise Exception(
-				'Command "ar" could not be found. Please install it in order to use this library.')
-
-		# get tar command
-		self.tar = cmd_in_path('tar')
-		# ensure file exists
-		if self.tar == None:
-			raise Exception(
-				'Command "tar" could not be found. Please install it in order to use this library.')
+		# tar
+		self.tar = TAR()
 		
 		# extract
 		tmp = self.__extract()
@@ -70,21 +62,21 @@ class Deb:
 		if not file.endswith('.deb'):
 			raise Exception(f'Passed file {file} is not a deb file.')
 		# filename
-		filename = Path(file).name
+		filename = resolve_path(file).name
 		# set path
 		if self.rmfile:
 			self.xpath = f'./.{filename}.tmp'
 		else:
-			self.xpath = f'./{filename.replace(".deb", "")}'
+			self.xpath = f'{self.outdir}{filename.replace(".deb", "")}'
 		# get full path
 		fpath = f'{file if file.startswith("/") else getcwd() + "/" + file}'
-        # if tmp dir exists, remove it
+        # if dir exists, remove it
 		if path.exists(self.xpath):
 			rmtree(self.xpath)
-		# make tmp dir
+		# make dir
 		makedirs(self.xpath)
 		# extract deb
-		getoutput(f'cd {self.xpath} && {self.ar} x {fpath}')
+		self.tar.decompress_archive(fpath, self.xpath)
 		# remove all files except control and data
 		for file in listdir(self.xpath):
 			if not file.startswith('control.') and not file.startswith('data.'):
@@ -96,9 +88,8 @@ class Deb:
 					raise Exception(f'Unknown archive format. ({file.replace("control.", "").replace("data.", "")})')
 				
 				try:
-					makedirs(f'{self.xpath}/{filename}', exist_ok=True)
-					after_args = f'-C DEBIAN' if file.startswith('control.') else ''
-					getoutput(f'cd {self.xpath} && {self.tar} -xf {file} {after_args}')
+					directory = 'DEBIAN' if file.startswith('control.') else ''
+					self.tar.decompress_archive(f'{self.xpath}/{file}', f'{self.xpath}/{directory}')
 				except:
 					raise Exception(
 						f"Error while decompressing archive {file}.")
