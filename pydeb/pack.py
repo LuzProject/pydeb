@@ -1,6 +1,6 @@
 # module imports
 from multiprocessing.pool import ThreadPool
-from os import listdir
+from os import listdir, makedirs
 from pathlib import Path
 from shutil import copytree, rmtree
 from time import time
@@ -13,7 +13,13 @@ from .archives.constrictor.ar import ARWriter
 
 
 class Pack:
-	def __init__(self, path: Path, algorithm: str = 'xz', compression_level: int = 9):
+	def __init__(self, path: Path, algorithm: str = 'xz', compression_level: int = 9, outdir: str = './'):
+		# outdir
+		self.outdir = outdir
+
+		if not resolve_path(outdir).exists():
+			makedirs(outdir)
+		
 		# check if path is Path
 		if type(path) is not Path: path = resolve_path(path)
 		
@@ -47,7 +53,7 @@ class Pack:
 		# formatted path
 		with open(f'{self.path}/DEBIAN/control', 'r') as f:
 			control = Control(f.read())
-			self.debpath = f'{control.package}_{control.version}_{control.architecture}.deb'
+			self.debpath = f'{self.outdir}{control.package}_{control.version}_{control.architecture}.deb'
 		# tmp dir
 		tmp = Path(f'.{self.path.name}.pack.tmp')
 		# remove tmp dir if it exists
