@@ -1,6 +1,5 @@
 # module imports
 from os import getcwd, listdir, makedirs, path, remove
-from pathlib import Path
 from shutil import rmtree
 
 # local imports
@@ -30,6 +29,7 @@ class Deb:
         tmp = self.__extract()
 
         # control
+        print(resolve_path('./*'))
         self.control = Control(open(f"{tmp}/DEBIAN/control").read())
 
         # filepaths
