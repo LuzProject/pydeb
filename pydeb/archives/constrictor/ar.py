@@ -25,14 +25,14 @@ class ARWriter(object):
         if not self.archive_ready:
             self.create_archive()
 
-        mode_string = f'{mode:04o}'
+        mode_string = f"{mode:04o}"
 
-        file_header = f'{file_name: <16}{mod_timestamp: <12}{uid: <6}{gid: <6}{mode_string: <8}{file_size: <10}`\n'
+        file_header = f"{file_name: <16}{mod_timestamp: <12}{uid: <6}{gid: <6}{mode_string: <8}{file_size: <10}`\n"
 
-        self.fp.write(file_header.encode('ascii'))
+        self.fp.write(file_header.encode("ascii"))
 
     def _write_file_content(self, source_path):
-        with open(source_path, 'rb') as source_file:
+        with open(source_path, "rb") as source_file:
             copyfileobj(source_file, self.fp)
 
     def _write_file_alignment(self):
@@ -53,8 +53,7 @@ class ARWriter(object):
         gid = gid_override or file_stat.st_gid
         mode = mode_override or file_stat.st_mode
         file_size = file_stat.st_size
-        self._write_file_header(file_to_archive_name,
-                                mod_time, uid, gid, mode, file_size)
+        self._write_file_header(file_to_archive_name, mod_time, uid, gid, mode, file_size)
         self._write_file_content(file_path)
 
         if file_size % 2 != 0:

@@ -1,4 +1,4 @@
-'''Manipulate DEB files from Python.'''
+"""Manipulate DEB files from Python."""
 
 # imports
 from .control import Control
