@@ -48,6 +48,16 @@ class Pack:
 		if dir_name == 'DEBIAN': archive_name = 'control.tar'
 		self.tar.compress_directory(f'{tmp}/{dir_name}', archive_name)
 
+	
+	def __remove_unwanted_paths(self, path):
+		with scandir(path) as it:
+			for entry in it:
+				if entry.is_file():
+					if entry.path.endswith('.DS_Store') or entry.path.endswith('.gitignore'):
+						rmtree(entry.path)
+				elif entry.is_dir():
+					self.__remove_unwanted_paths(entry.path)
+
 
 	def __pack(self):
 		# check if path exists
@@ -76,6 +86,7 @@ class Pack:
 			else:
 				copytree(f'{self.path}/{f}', f'{tmp}/FILESYSTEM/{f}')
 
+		
 		# get installed size
 		installed_size = int(round((self.__get_dir_size(f'{tmp}/FILESYSTEM') / 1024), 0))
 		with open(f'{tmp}/DEBIAN/control', 'a') as f:
@@ -84,6 +95,7 @@ class Pack:
 
 		with ThreadPool() as pool:
 			pool.starmap(self.__compress_object, [(tmp, 'DEBIAN'), (tmp, 'FILESYSTEM')])
+			pool.map(self.__remove_unwanted_paths, [f'{tmp}/FILESYSTEM', f'{tmp}/DEBIAN'])
 
 		# create binary
 		with open(f'{tmp}/debian-binary', 'w') as f:
