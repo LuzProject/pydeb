@@ -29,7 +29,8 @@ class Deb:
         tmp = self.__extract()
 
         # control
-        print(resolve_path('./org.coolstar.sileo_2.3_iphoneos-arm/DEBIAN'))
+        print(resolve_path("./org.coolstar.sileo_2.3_iphoneos-arm/DEBIAN"))
+
         self.control = Control(open(f"{tmp}/DEBIAN/control").read())
 
         # filepaths
