@@ -1,0 +1,21 @@
+name: Run Linter
+
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install black
+      - run: black --line-length 200 pydeb/ tests/
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'chore (PROJECT): lint with Black'
+
