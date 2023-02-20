@@ -1,6 +1,15 @@
 name: Run Linter
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+    - pydeb/*.py
+    - tests/*.py
+  pull-request:
+    paths:
+    - pydeb/*.py
+    - tests/*.py
+
 jobs:
   lint:
     runs-on: ubuntu-latest
