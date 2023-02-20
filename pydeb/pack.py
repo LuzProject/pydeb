@@ -1,6 +1,6 @@
 # module imports
 from multiprocessing.pool import ThreadPool
-from os import listdir, makedirs
+from os import listdir, makedirs, scandir
 from pathlib import Path
 from shutil import copytree, rmtree
 from time import time
@@ -32,6 +32,16 @@ class Pack:
 		# path of deb
 		self.debpath = ''
 		self.__pack()
+
+	def __get_dir_size(self, path='.'):
+		total = 0
+		with scandir(path) as it:
+			for entry in it:
+				if entry.is_file():
+					total += entry.stat().st_size
+				elif entry.is_dir():
+					total += self.__get_dir_size(entry.path)
+		return total
 
 	def __compress_object(self, tmp, dir_name):
 		archive_name = 'data.tar'
@@ -65,6 +75,12 @@ class Pack:
 				copytree(f'{self.path}/{f}', f'{tmp}/DEBIAN')
 			else:
 				copytree(f'{self.path}/{f}', f'{tmp}/FILESYSTEM/{f}')
+
+		# get installed size
+		installed_size = int(round((self.__get_dir_size(f'{tmp}/FILESYSTEM') / 1024), 0))
+		with open(f'{tmp}/DEBIAN/control', 'a') as f:
+			f.write(f'Installed-Size: {installed_size}\n')
+			f.close()
 
 		with ThreadPool() as pool:
 			pool.starmap(self.__compress_object, [(tmp, 'DEBIAN'), (tmp, 'FILESYSTEM')])
